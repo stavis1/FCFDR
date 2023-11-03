@@ -22,17 +22,6 @@ parser.add_argument('-d', '--design', action = 'store', required = False,
                     help='experimental design file, only for use with the --tsv input mode')
 args = parser.parse_args()
 
-# ## testing only ##
-# class args_tester:
-#     def __init__(self):
-#         self.fdr = 0.9
-#         self.out = 'FCFDR_test_out'
-#         self.excel = 'FCFDRtest1.xlsx'
-#         self.tsv = False
-
-# args = args_tester()
-# ##################
-
 from collections import defaultdict
 import os
 
@@ -110,6 +99,7 @@ n_null = len(null_fcs)
 null_dist = [((i+1)/2,*n) for i,n in enumerate(sorted(null_fcs, key = lambda x: abs(x[0]), reverse = True))]
 dist = list(sorted(null_dist + true_dist, key = lambda x: abs(x[1])))
 
+sig_idx = len(dist)
 exp_null = 0
 for i,fc in enumerate(dist):
     if fc[2] and exp_null/fc[0] < args.fdr:
@@ -137,7 +127,10 @@ bounds = [get_bounds(*i) for i in zip(*[significant[c] for c in significant.colu
 
 significant['lower_bound'] = [b[0] for b in bounds]
 significant['upper_bound'] = [b[1] for b in bounds]
-    
+coherent = np.equal(np.sign(significant['upper_bound']),np.sign(significant['lower_bound']))
+significant['significant'] = [s if c else int(not s) for s,c in zip(significant['significant'],coherent)]
+
+
 if args.excel:
     with pd.ExcelWriter(f'{args.out}.xlsx') as xlsx:
         for cond1, cond2 in zip(comparisons['condition1'], comparisons['condition2']):
