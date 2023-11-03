@@ -1,0 +1,4 @@
+#sample mapping with tab separated format:sample	condition
+sample1	condition1
+#comparisons to make with tab separated format:condition1	condition2
+condition1	condition2
