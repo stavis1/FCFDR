@@ -40,10 +40,10 @@ elif args.tsv:
     data = pd.read_csv(args.tsv, sep='\t')
     with open(args.design, 'r') as txt:
         blocks = txt.read().split('#')[1:]
-    design = [f.split('\t') for f in blocks[0].split('\n')[1:]]
+    design = [f.split('\t') for f in blocks[0].split('\n')[1:] if f]
     design = pd.DataFrame({'sample':[f[0] for f in design],
                            'condition':[f[1] for f in design]})
-    comparisons = [f.split('\t') for f in blocks[1].split('\n')[1:]]
+    comparisons = [f.split('\t') for f in blocks[1].split('\n')[1:] if f]
     comparisons = pd.DataFrame({'condition1':[f[0] for f in comparisons],
                                 'condition2':[f[1] for f in comparisons]})
 
@@ -119,7 +119,8 @@ def get_bounds(analyte, c1, c2):
     niter = 1000
     resamps1 = np.reshape(ac_nulls[(analyte,c1)].resample(niter*len(cond_samp[c1])), (niter,len(cond_samp[c1])))
     resamps2 = np.reshape(ac_nulls[(analyte,c2)].resample(niter*len(cond_samp[c2])), (niter,len(cond_samp[c2])))
-    l2fc = np.log2(np.mean(resamps1, axis = 1)/np.mean(resamps2, axis = 1))
+    l2fc = np.log2(np.nanmean(resamps1, axis = 1)/np.nanmean(resamps2, axis = 1))
+    l2fc = l2fc[np.isfinite(l2fc)]
     return np.quantile(l2fc, (0.1,0.9))
 
 print('Calculating interval estimates')
@@ -128,7 +129,7 @@ bounds = [get_bounds(*i) for i in zip(*[significant[c] for c in significant.colu
 significant['lower_bound'] = [b[0] for b in bounds]
 significant['upper_bound'] = [b[1] for b in bounds]
 coherent = np.equal(np.sign(significant['upper_bound']),np.sign(significant['lower_bound']))
-significant['significant'] = [s if c else int(not s) for s,c in zip(significant['significant'],coherent)]
+significant['significant'] = [s if c else 0 for s,c in zip(significant['significant'],coherent)]
 
 
 if args.excel:
