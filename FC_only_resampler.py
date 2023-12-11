@@ -14,6 +14,8 @@ parser.add_argument('-o', '--out', action = 'store', required = False, default =
                     help='output filename, default is "results"')
 parser.add_argument('-f', '--fdr', action = 'store', required = False, default = 0.01, type = float,
                     help='FDR cutoff, default is 0.01')
+parser.add_argument('-r', '--ROPE', action = 'store', required = False, default = 1, type = float,
+                    help='Region Of Pracical Equivalence in fold change units, default = 1.')
 parser.add_argument('-x', '--excel', action = 'store', required = False, default = False,
                     help='excel file input, use either this or the tsv + experimental design input option')
 parser.add_argument('-t', '--tsv', action = 'store', required = False, default = False,
@@ -90,8 +92,10 @@ null_fcs = []
 for conds in zip(comparisons['condition1'], comparisons['condition2']):
     for cond in conds:
         n_samps = len(cond_samp[cond])
+        means = np.mean(data[cond_samp[cond]], axis = 1)
+        fc_offsets = (means*args.ROPE) - means
         c1_means = np.mean([ac_nulls[(a,cond)].resample(n_samps)[0] for a in data['analyte']],axis = 1)
-        c2_means = np.mean([ac_nulls[(a,cond)].resample(n_samps)[0] for a in data['analyte']],axis = 1)
+        c2_means = np.mean([ac_nulls[(a,cond)].resample(n_samps)[0] + o for a,o in zip(data['analyte'],fc_offsets)],axis = 1)
         l2fcs = np.log2(c1_means/c2_means)
         null_fcs.extend([(l2fc,False,a,cond) for a, l2fc in zip(data['analyte'],l2fcs)])
 
